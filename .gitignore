@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.mplconfig/
+
+# Data and generated outputs are intentionally not committed here.
+data/
+outputs/
+private_inputs/
+private/
+*.xlsx
+*.xls
+*.png
+*.pdf
+*.svg
+*.tif
+*.tiff
+
+# Secrets and private session material.
+*.key
+*.pem
+*token*
+*api_key*
+*share_link*
