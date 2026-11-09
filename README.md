@@ -1,8 +1,8 @@
-# Benchmarking the Reliability of Large Language Models Across the Clinical Evidence Ecosystem
+# LLM Clinical Evidence Benchmark
 
-This repository contains the statistical analysis and figure-generation code accompanying the study *Benchmarking the Reliability of Large Language Models Across the Clinical Evidence Ecosystem*.
+This repository contains the statistical analysis and figure-generation code accompanying the study *Lost in the Evidence: Evaluating Large Language Models on Clinical Evidence Completeness, Consensus, and Applicability*.
 
-The study evaluates three large language models (ChatGPT, Gemini, and DeepSeek) across three independent benchmarks:
+The study examines how general-purpose large language models handle clinical evidence completeness, consensus, and applicability, with implications for consumer health information seeking. It evaluates ChatGPT, DeepSeek, and Gemini across three independent benchmarks:
 
 - **Evidence completeness:** Identification of clinical trial safety signals and supporting evidence sources.
 - **Evidence consensus:** Assessment of agreement and disagreement in clinical evidence.
@@ -16,9 +16,16 @@ The `figures/` directory contains scripts for generating Figure 2 and Supplement
 
 ## Data
 
-The benchmark datasets and recorded model responses are provided separately on Figshare. Each benchmark includes a Gold standard file and a corresponding model response file.
+The companion dataset is being prepared on Figshare as *LLM Clinical Evidence Benchmark Dataset: Completeness, Consensus, and Applicability* (DOI pending). The Figshare package is currently a draft and has not yet been publicly released. It contains six analysis input files: one Gold standard file and one model response file for each benchmark.
 
-Task 1, Task 2, and Task 3 applicability-verdict analyses can be reproduced using the public data. Analyses involving Task 3 key-reason accuracy and reason-quality agreement require additional human evaluation ratings, which are not included in the public dataset.
+| Benchmark | Gold items | Model responses |
+|---|---:|---:|
+| Evidence completeness | 170 | 1,020 |
+| Evidence consensus | 36 | 216 |
+| Evidence applicability | 60 | 360 |
+| **Total** | **266** | **1,596** |
+
+Task 1, Task 2, and Task 3 applicability-verdict analyses can be reproduced using the six Gold and Responses CSV files. Analyses involving Task 3 key-reason accuracy and human-rated reason-quality agreement require additional human evaluation ratings, which are not included in the public dataset. Therefore, the public CSV files alone do not reproduce every result reported in the study.
 
 ## Usage
 
