@@ -1,4 +1,4 @@
-"""Task 2 Evidence Consensus: frozen parser, scoring and inference."""
+"""Task 2 Evidence Disagreement: frozen parser, scoring and inference."""
 
 from __future__ import annotations
 

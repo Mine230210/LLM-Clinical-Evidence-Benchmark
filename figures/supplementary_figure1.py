@@ -188,8 +188,8 @@ def build_figure(task1_results: Path, task2_results: Path, task3_results: Path) 
     )
 
     groups = [
-        ("Task 1", 11.65, 11.23, "Evidence completeness", "Joint Success"),
-        ("Task 2", 7.50, 7.08, "Evidence consensus", "Overall controversy classification accuracy"),
+        ("Task 1", 11.65, 11.23, "Evidence visibility", "Joint Success"),
+        ("Task 2", 7.50, 7.08, "Evidence disagreement", "Overall controversy classification accuracy"),
         ("Task 3", 3.35, 2.93, "Evidence applicability", "Applicability verdict accuracy"),
     ]
     for task, y_head, y_outcome, title, outcome in groups:

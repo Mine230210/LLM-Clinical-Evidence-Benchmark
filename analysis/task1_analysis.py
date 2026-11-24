@@ -1,4 +1,4 @@
-"""Task 1 Evidence Completeness: frozen scoring and statistical analysis.
+"""Task 1 Evidence Visibility: frozen scoring and statistical analysis.
 
 The formal multiplicity family contains only the three pairwise model
 comparisons. The pooled PubMed-linked versus Unlinked contrast is a separate
@@ -29,6 +29,41 @@ MODEL_PERMUTATION_SEED = 2026102203
 def ci(values: np.ndarray) -> tuple[float, float]:
     low, high = np.quantile(np.asarray(values, dtype=float), [0.025, 0.975], method="linear")
     return float(low), float(high)
+
+
+def bootstrap_binary_kappa(
+    paired_labels: np.ndarray,
+    group: str,
+    linked: np.ndarray,
+    unlinked: np.ndarray,
+    weights_l: np.ndarray,
+    weights_u: np.ndarray,
+) -> tuple[float, float, int]:
+    """Estimate a percentile CI while preserving item-level paired structure."""
+    a = np.asarray(paired_labels[:, 0], dtype=float)
+    b = np.asarray(paired_labels[:, 1], dtype=float)
+    agree = (a == b).astype(float)
+
+    if group == "Overall":
+        denominator = len(a)
+        a_mean = (weights_l @ a[linked] + weights_u @ a[unlinked]) / denominator
+        b_mean = (weights_l @ b[linked] + weights_u @ b[unlinked]) / denominator
+        observed = (weights_l @ agree[linked] + weights_u @ agree[unlinked]) / denominator
+    else:
+        ids = linked if group == "PubMed-linked" else unlinked
+        weights = weights_l if group == "PubMed-linked" else weights_u
+        a_mean = weights @ a[ids] / len(ids)
+        b_mean = weights @ b[ids] / len(ids)
+        observed = weights @ agree[ids] / len(ids)
+
+    expected = a_mean * b_mean + (1 - a_mean) * (1 - b_mean)
+    kappa_denominator = 1 - expected
+    valid = np.abs(kappa_denominator) >= 1e-15
+    if not valid.any():
+        return np.nan, np.nan, 0
+    bootstrap_kappa = (observed[valid] - expected[valid]) / kappa_denominator[valid]
+    low, high = ci(bootstrap_kappa)
+    return low, high, int(valid.sum())
 
 
 def holm_adjust(pvalues: list[float]) -> list[float]:
@@ -164,6 +199,16 @@ def run_analysis(gold: pd.DataFrame, scored: pd.DataFrame) -> dict[str, pd.DataF
             strict_arr = item_joint.min(axis=1)
             lenient_arr = item_joint.max(axis=1)
             agree_arr = (item_joint[:, 0] == item_joint[:, 1]).astype(int)
+            overall_item_joint = values[:, j, :, 0]
+            kappa = binary_kappa(item_joint[:, 0], item_joint[:, 1])
+            kappa_lo, kappa_hi, kappa_valid = bootstrap_binary_kappa(
+                overall_item_joint,
+                group,
+                linked,
+                unlinked,
+                weights_l,
+                weights_u,
+            )
             js_lo, js_hi = ci(boots[group][:, index[(model, "Joint_Success", "Average")]])
             strict_lo, strict_hi = ci(boots[group][:, index[(model, "Joint_Success", "Strict")]])
             lenient_lo, lenient_hi = ci(boots[group][:, index[(model, "Joint_Success", "Lenient")]])
@@ -178,7 +223,9 @@ def run_analysis(gold: pd.DataFrame, scored: pd.DataFrame) -> dict[str, pd.DataF
                 "Lenient_CI_Lower": lenient_lo, "Lenient_CI_Upper": lenient_hi,
                 "Agreement_Count": int(agree_arr.sum()), "Observed_Agreement": float(agree_arr.mean()),
                 "Agreement_CI_Lower": agree_lo, "Agreement_CI_Upper": agree_hi,
-                "Joint_Kappa": binary_kappa(item_joint[:, 0], item_joint[:, 1]),
+                "Joint_Kappa": kappa,
+                "Joint_Kappa_CI_Lower": kappa_lo, "Joint_Kappa_CI_Upper": kappa_hi,
+                "Joint_Kappa_Valid_Bootstrap_Replicates": kappa_valid,
             })
             q1_lo, q1_hi = ci(boots[group][:, index[(model, "Q1_Positive", "Average")]])
             q2_lo, q2_hi = ci(boots[group][:, index[(model, "Q2_Gold_Match", "Average")]])
@@ -196,8 +243,9 @@ def run_analysis(gold: pd.DataFrame, scored: pd.DataFrame) -> dict[str, pd.DataF
                 "Model": model, "Group": group, "Outcome": "Joint Success",
                 "Observed_Agreement": float(agree_arr.mean()),
                 "Agreement_CI_Lower": agree_lo, "Agreement_CI_Upper": agree_hi,
-                "Cohen_Kappa": binary_kappa(item_joint[:, 0], item_joint[:, 1]),
-                "Kappa_CI_Lower": np.nan, "Kappa_CI_Upper": np.nan,
+                "Cohen_Kappa": kappa,
+                "Kappa_CI_Lower": kappa_lo, "Kappa_CI_Upper": kappa_hi,
+                "Kappa_Valid_Bootstrap_Replicates": kappa_valid,
             })
 
     joint = average[:, :, 0]
@@ -291,6 +339,7 @@ def main() -> None:
         "bootstrap_seed": BOOTSTRAP_SEED,
         "visibility_permutation_seed": VISIBILITY_PERMUTATION_SEED,
         "model_permutation_seed": MODEL_PERMUTATION_SEED,
+        "kappa_ci_method": "20,000-replicate PubMed-linkage-stratified item-cluster percentile bootstrap",
         "formal_family": "Three pairwise Joint Success model comparisons; Holm adjusted",
         "exploratory_test": "Pooled PubMed-linked minus Unlinked; raw two-sided P",
     }
